@@ -1,5 +1,6 @@
 #include "lvgl/lvgl.h"
 #include "lv_drivers/display/fbdev.h"
+#include "lv_drivers/indev/evdev.h"
 #include "lv_demos/lv_demo.h"
 #include <unistd.h>
 #include <pthread.h>
@@ -7,6 +8,8 @@
 #include <sys/time.h>
 
 #define DISP_BUF_SIZE (128 * 1024)
+LV_IMG_DECLARE(img_lvgl_logo)
+
 
 int main(void)
 {
@@ -28,12 +31,24 @@ int main(void)
     lv_disp_drv_init(&disp_drv);
     disp_drv.draw_buf   = &disp_buf;
     disp_drv.flush_cb   = fbdev_flush;
-    disp_drv.hor_res    = 800;
-    disp_drv.ver_res    = 480;
+    disp_drv.hor_res    = 1024;
+    disp_drv.ver_res    = 768;
     lv_disp_drv_register(&disp_drv);
 
+    evdev_init();
+    lv_indev_drv_t indev_drv;
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = evdev_read;
+    lv_indev_drv_register(&indev_drv);
+
+    lv_indev_t * mouse_indev = lv_indev_drv_register(&indev_drv);
+    lv_obj_t * cursor_obj = lv_img_create(lv_scr_act()); //Create an image for the cursor
+    lv_img_set_src(cursor_obj, &img_lvgl_logo); //For simlicity add a built in symbol not an image
+    lv_indev_set_cursor(mouse_indev, cursor_obj); // connect the object to the driver
+
     /*Create a Demo*/
-    lv_demo_widgets();
+    lv_demo_music();
 
     /*Handle LitlevGL tasks (tickless mode)*/
     while(1) {
